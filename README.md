@@ -7,6 +7,12 @@ When you use parts of this repository within your publications, consider referen
 
 * tbd
 
+Example layout of the Firefox source code:
+
+Firefox Layout             |  Firefox Treemap Screenshot
+:-------------------------:|:-------------------------:
+![](docs/images/firefox-layout.png)  |  ![](docs/images/firefox-screenshot.png)
+
 ## Notes for Practitioners
 
 The prototype is a command-line-based tool to load CSV-encoded text files that contain path-encoded nodes and additional attributes that can be selected as weights for the layout computation.
@@ -36,3 +42,23 @@ If your are interested in the visualization of tree-structured data or further r
 
 Contact:
  * Willy Scheibel ([willy.scheibel@hpi.de](mailto:willy.scheibel@hpi.de))
+
+## Gallery
+
+### High-Res Firefox Layout
+
+![](docs/images/firefox-layout-highres.png)
+
+### Treemap Visualizations
+
+![](docs/images/glowing-softwaremap.png)
+
+![](docs/images/aggregation.png)
+
+![](docs/images/evocells.png)
+
+![](docs/images/mixed-layouts.png)
+
+![](docs/images/qt.png)
+
+![](docs/images/treemap-diff-3.png)
