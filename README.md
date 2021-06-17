@@ -5,7 +5,7 @@ The source code, datasets, and scripts will be released with the publication of 
 
 When you use parts of this repository within your publications, consider referencing its accompanying publication:
 
-* tbd
+* Willy Scheibel, Christopher Weyand, Joseph Bethge, and Jürgen Döllner: "Algorithmic Improvements on Hilbert and Moore Treemaps for Visualization of Large Tree-structured Datasets". In Proc. EuroVis 2021 - Short Papers. The Eurographics Association, 2021. doi: [10.2312/evs.20211065](https://doi.org/10.2312/evs.20211065)
 
 Example layout of the Firefox source code:
 
@@ -21,18 +21,71 @@ The main output of the tool is the resulting layouts both in plain text and SVG 
 
 ### Setup
 
-The tool has the following dependencies:
+The command-line tool has the following dependencies:
 
 * C++17
 * CMake
 
 ### Compilation
 
-tbd
+This project is generally buildable by using a standard CMake setup with the `CMakeLists.txt` in the project root.
+As a small shortcut, you can use the `configure` script as well:
+
+```bash
+$ ./configure # sets up a local config directory
+$ ./configure
+$ cmake --build build
+```
+
+### Command-line Interface
+
+The main build target of this project is the `hilbert-moore-treemap-layouts` command-line program.
+This program exposes the following arguments:
+
+```
+hilbert-moore-treemap-layouts
+
+# Treemap configuration
+--dataset [file]
+    a file containing nodes and weight data
+--datasets [file]
+    a file whose contents are paths to dataset files (use in combination with --datasets-prefix)
+--datasets-prefix [path]
+    the path prefix for dataset identifiers from a datasets file
+--weights [string]
+    select the column to use as weight data
+--partition [greedy|minmax|minvariance]
+    choose the partitioning algorithm
+--algorithm [hilbert|moore]
+    choose the space-filling curve
+--
+    read dataset files from stdin
+
+# Measurements
+-pm
+    measure and output run-time performance
+-lm
+    measure and output layout metrics
+-es
+    export last layout as svg
+-el
+    export last layout as in text format (left, bottom, with, height)
+-p
+    print dataset statistics
+```
 
 ### Steps for Reproduction of the Results
 
-tbd
+The scripts are based on bash and Python 3.
+
+```bash
+$ ./scripts/statistics.sh
+$ ./scripts/screenshots.sh
+$ ./scripts/performance-measurements.sh
+$ ./scripts/layout-metrics-measurements.sh
+```
+
+The results are stored in the `resources` directory.
 
 ## Notes for Researchers and Collaborators
 
@@ -48,17 +101,3 @@ Contact:
 ### High-Res Firefox Layout
 
 ![](docs/images/firefox-layout-highres.png)
-
-### Treemap Visualizations
-
-![](docs/images/glowing-softwaremap.png)
-
-![](docs/images/aggregation.png)
-
-![](docs/images/evocells.png)
-
-![](docs/images/mixed-layouts.png)
-
-![](docs/images/qt.png)
-
-![](docs/images/treemap-diff-3.png)

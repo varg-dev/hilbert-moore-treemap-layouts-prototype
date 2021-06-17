@@ -8,7 +8,7 @@ set(demo_datasets
 set(demo_full_datasets
     calculator
     cpprestsdk
-    DirectXTK12
+#     DirectXTK12
     glbinding
     globjects
     glfw
