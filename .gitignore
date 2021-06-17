@@ -1,0 +1,61 @@
+# Compiled Object files
+*.slo
+*.lo
+*.o
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+
+# configuration files
+.localconfig
+
+# build dir
+build*
+/_configure.bat
+/_open-project.bat
+/_start-cmake-gui.bat
+/bin
+/lib
+release_build
+debug_build
+
+# IDE project files
+*.sublime-project
+*.sublime-workspace
+
+#qt cache
+CMakeLists.txt.user
+CMakeLists.txt.user.*
+/install
+build-vs/
+
+# Ini files
+*.ini
+*.sqlite
+
+# Log files
+*.log
+
+*~
+*.orig
+*.swp
+*.autosave
+_*.bat
+_*/
+.vagrant/
+Vagrantfile
+
+# MacOS
+*.DS_Store
+
+# python
+*.pyc
+
+#localanalyzer
+.credentials_store
