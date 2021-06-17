@@ -1,7 +1,7 @@
 # Hilbert and Moore Treemap Layouts Prototype
 
-This repository will contain the C++ prototype for a research paper submitted to the EuroVis 2021.
-The source code, datasets, and scripts will be released with the publication of the paper.
+This repository hosts the C++ prototype for a research paper published at the EuroVis 2021.
+It contains the source code, datasets, and scripts to reproduce the results.
 
 When you use parts of this repository within your publications, consider referencing its accompanying publication:
 
@@ -21,10 +21,12 @@ The main output of the tool is the resulting layouts both in plain text and SVG 
 
 ### Setup
 
-The command-line tool has the following dependencies:
+The project and its command-line tool have the following dependencies:
 
+* git
 * C++17
 * CMake
+* Python3
 
 ### Compilation
 
@@ -32,6 +34,8 @@ This project is generally buildable by using a standard CMake setup with the `CM
 As a small shortcut, you can use the `configure` script as well:
 
 ```bash
+$ git submodule init
+$ git submodule update # gather the internal glm dependency
 $ ./configure # sets up a local config directory
 $ ./configure
 $ cmake --build build
