@@ -19,6 +19,7 @@ namespace
 {
 
 
+/*
 inline float to_float(const std::string & value)
 {
     if (value.empty())
@@ -28,6 +29,7 @@ inline float to_float(const std::string & value)
 
     return std::stof(value);
 }
+*/
 
 inline float to_float(const std::string_view & value)
 {
@@ -226,7 +228,7 @@ Tree * CSVImporter::load(const std::string& filename, const std::string & weight
         int sliceStart = nodes.size();
 
         // loop over all parents in this level
-        for(int pstart = 0; pstart<level.size(); )
+        for(auto pstart = std::size_t(0); pstart < level.size(); )
         {
             const auto nextLevelBegin = nextLevelEnd;
             const auto parentIdx = level[pstart].first;
@@ -319,7 +321,7 @@ Tree * CSVImporter::load(const std::string& filename, const std::string & weight
     auto filter = std::vector<int>({ weightIndex });
     std::sort(filter.begin(), filter.end());
 
-    const auto perNodeAttributeParsing = [& tree, &values, & weightValues, & weightIndex, & filter](const TreeNode * node) {
+    const auto perNodeAttributeParsing = [&values, & weightValues, & weightIndex, & filter](const TreeNode * node) {
         parseLine(values[node->index()], 0, ';', filter, [& node, & weightValues, & weightIndex](const std::string_view & attribute_value, const int k) {
             /*if (k != weightIndex)
             {

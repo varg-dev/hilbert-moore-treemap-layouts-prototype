@@ -16,7 +16,7 @@ namespace
 {
 
 
-inline float sum_accum(const Buffer<float> & buffer, const Tree * tree, const TreeNode * parent, const TreeNode * first, const TreeNode * end)
+inline float sum_accum(const Buffer<float> & buffer, const Tree * /*tree*/, const TreeNode * /*parent*/, const TreeNode * first, const TreeNode * end)
 {
     auto sum = 0.0f;
 

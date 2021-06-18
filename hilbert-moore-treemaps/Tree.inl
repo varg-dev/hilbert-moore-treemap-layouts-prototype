@@ -22,7 +22,7 @@ struct tree_iteration<IterationOrder::ALL_NODES_TOP_DOWN>
     template <typename Callback>
     void operator()(const std::vector<std::pair<std::uint32_t, std::uint32_t>> & slices, Callback && callback) const
     {
-        for (auto i = 0; i < slices.size(); ++i)
+        for (auto i = std::size_t(0); i < slices.size(); ++i)
         {
             callback(slices[i].first, slices[i].second);
         }
@@ -48,7 +48,7 @@ struct tree_iteration<IterationOrder::LEAVES>
     template <typename Callback>
     void operator()(const std::vector<std::pair<std::uint32_t, std::uint32_t>> & slices, Callback && callback) const
     {
-        for (auto i = 0; i < slices.size(); ++i)
+        for (auto i = std::size_t(0); i < slices.size(); ++i)
         {
             callback(slices[i].first, slices[i].second);
         }
@@ -61,7 +61,7 @@ struct tree_iteration<IterationOrder::PARENTS_TOP_DOWN>
     template <typename Callback>
     void operator()(const std::vector<std::pair<std::uint32_t, std::uint32_t>> & slices, Callback && callback) const
     {
-        for (auto i = 0; i < slices.size() - 2; ++i)
+        for (auto i = std::size_t(0); i < slices.size() - 2; ++i)
         {
             callback(slices[i].first, slices[i].second);
         }

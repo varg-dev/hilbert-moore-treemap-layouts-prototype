@@ -146,6 +146,7 @@ float computeAverageAspectRatio(Tree * tree, const Buffer<Rect> & layout)
     return numberOfNodes == 0 ? 0.0f : summedAspectRatio / numberOfNodes;
 }
 
+/*
 float computeAverageAspectRatioChange(Tree * tree, const std::unordered_map<std::uint32_t, std::uint32_t> & nodeIndexById, const Buffer<Rect> & layout, Tree * treeComp, const std::unordered_map<std::uint32_t, std::uint32_t> & nodeIndexByIdComp, const Buffer<Rect> & layoutComp, const std::vector<std::uint32_t> & occuringInBothRevisions)
 {
     auto numberOfNodes = occuringInBothRevisions.size();
@@ -170,6 +171,7 @@ float computeAverageAspectRatioChange(Tree * tree, const std::unordered_map<std:
 
     return summedAspectRatioChange / numberOfNodes;
 }
+*/
 
 float computeAverageDistanceChange(Tree * tree, const std::unordered_map<std::uint32_t, std::uint32_t> & nodeIndexById, const Buffer<Rect> & layout, Tree * treeComp, const std::unordered_map<std::uint32_t, std::uint32_t> & nodeIndexByIdComp, const Buffer<Rect> & layoutComp, const std::vector<std::uint32_t> & occuringInBothRevisions)
 {
@@ -221,11 +223,11 @@ Rect getSection(const Rect & r1, size_t i)
 float computeRelativePositionChange(
         Tree * tree,
         const std::unordered_map<std::uint32_t, std::uint32_t> & nodeIndexById,
-        const Buffer<std::uint32_t> & nodeIdByIndex,
+        const Buffer<std::uint32_t> & /*nodeIdByIndex*/,
         const Buffer<Rect> & layout,
         Tree * treeComp,
         const std::unordered_map<std::uint32_t, std::uint32_t> & nodeIndexByIdComp,
-        const Buffer<std::uint32_t> & nodeIdByIndexComp,
+        const Buffer<std::uint32_t> & /*nodeIdByIndexComp*/,
         const Buffer<Rect> & layoutComp,
         const std::vector<std::uint32_t> & occuringInBothRevisions)
 {
@@ -339,7 +341,7 @@ std::pair<float,float> computeAngularMetrics(Tree * tree, const std::unordered_m
     return std::make_pair(rdc, aad);
 }
 
-float computeLocationDrift(const std::vector<Tree *> & trees, std::uint32_t maxId, const std::vector<Buffer<std::uint32_t>> & index2ids, const std::vector<std::unordered_map<std::uint32_t, std::uint32_t>> & nodeIndexByIds, const std::vector<Buffer<Rect>> & layouts)
+float computeLocationDrift(const std::vector<Tree *> & trees, std::uint32_t maxId, const std::vector<Buffer<std::uint32_t>> & index2ids, const std::vector<std::unordered_map<std::uint32_t, std::uint32_t>> & /*nodeIndexByIds*/, const std::vector<Buffer<Rect>> & layouts)
 {
     std::vector<glm::vec2> mergedCenters(maxId+1);
     std::vector<unsigned int> occurrencesPerNode(maxId+1);
@@ -497,7 +499,7 @@ int main(int argc, char ** argv)
     auto mapToGlobalIds = [&path2id](const std::vector<std::string>& paths) {
         Buffer<std::uint32_t> res(std::vector<std::uint32_t>(paths.size()));
 
-        for (int index = 0; index < paths.size(); ++index)
+        for (auto index = std::size_t(0); index < paths.size(); ++index)
         {
             auto it = path2id.find(paths[index]);
             if(it == end(path2id))
@@ -530,7 +532,7 @@ int main(int argc, char ** argv)
             auto & currentIndex2id = index2id.emplace_back(mapToGlobalIds(paths));
             auto & currentID2index = id2index.emplace_back(std::unordered_map<std::uint32_t, std::uint32_t>({}));
 
-            for (auto i = 0; i < currentIndex2id.size(); ++i)
+            for (auto i = std::size_t(0); i < currentIndex2id.size(); ++i)
             {
                 currentID2index[currentIndex2id[i]] = i;
             }
@@ -559,7 +561,7 @@ int main(int argc, char ** argv)
             auto & currentIndex2id = index2id.emplace_back(mapToGlobalIds(paths));
             auto & currentID2index = id2index.emplace_back(std::unordered_map<std::uint32_t, std::uint32_t>({}));
 
-            for (auto i = 0; i < currentIndex2id.size(); ++i)
+            for (auto i = std::size_t(0); i < currentIndex2id.size(); ++i)
             {
                 currentID2index[currentIndex2id[i]] = i;
             }

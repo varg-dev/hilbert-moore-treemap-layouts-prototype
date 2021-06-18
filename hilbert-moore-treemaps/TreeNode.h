@@ -11,10 +11,12 @@
 #include <glm/vec4.hpp>
 
 
-
-
 #ifndef LAYOUTER_INLINE
+#ifndef NDEBUG
 #define LAYOUTER_INLINE
+#else
+#define LAYOUTER_INLINE inline
+#endif
 #endif
 
 

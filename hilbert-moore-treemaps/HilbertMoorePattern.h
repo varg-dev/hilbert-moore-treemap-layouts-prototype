@@ -17,6 +17,7 @@ struct DoNothing
 
     static std::vector<Rect> dissect(const std::vector<float> & weights, const Rect & rect)
     {
+        (void)weights; // only used when assertions are compiled
         assert(weights.size()==PARTS);
         return {rect};
     }

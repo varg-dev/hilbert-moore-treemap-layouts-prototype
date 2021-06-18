@@ -110,7 +110,7 @@ Tree * TreeProcessing::removeZeroWeightNodes(Tree * tree, const std::string & we
     if (paths)
     {
         assert(paths->size() == tree->size());
-        for (int i = 0; i < prunedTree->size(); ++i) {
+        for (auto i = std::size_t(0); i < prunedTree->size(); ++i) {
             assert(previousNodes[i]->index() >= i);
             paths->operator[](i) = paths->operator[](previousNodes[i]->index());
         }
@@ -151,9 +151,7 @@ Tree * TreeProcessing::flatten(Tree * tree, const std::string & weightAttribute,
 
     nodes.emplace_back(0, 0, -1);
 
-    auto & root = nodes.front();
-
-    tree->leavesDo([&nodes, &root, &weightValues, &flattedWeightValues](const TreeNode * leaf) {
+    tree->leavesDo([&nodes, &weightValues, &flattedWeightValues](const TreeNode * leaf) {
         nodes.emplace_back(nodes.size(), 1, 0);
         flattedWeightValues[nodes.back().index()] = weightValues[leaf];
     });

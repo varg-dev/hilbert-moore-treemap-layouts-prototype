@@ -19,7 +19,7 @@ std::vector<TreeNode::NodeRange> partitionMinMax(const TreeNode::NodeRange & ran
     const auto prefixEnd = prefix.end();
 
     std::vector<TreeNode::NodeRange> cuts; // end iterator for each cut (cut before this index)
-    const auto eval = [& range, &cuts, &prefix, prefixBegin, prefixEnd] (precision_type partLimit)
+    const auto eval = [& range, &cuts, prefixBegin, prefixEnd] (precision_type partLimit)
     {
         cuts.clear();
         auto currentEnd = prefixBegin;
@@ -93,7 +93,7 @@ std::vector<TreeNode::NodeRange> partitionVariance(const TreeNode::NodeRange & r
 
 std::vector<TreeNode::NodeRange> partitionGreedy(const TreeNode::NodeRange & range, const Buffer<float> &weights) {
 
-    int n = range.size();
+    auto n = range.size();
     assert(n>=4);
 
     auto OPT = accumulate(weights.begin() + range.first->index(), weights.begin() + range.first->index() + range.size(), 0.0) / 4.0;
@@ -101,7 +101,7 @@ std::vector<TreeNode::NodeRange> partitionGreedy(const TreeNode::NodeRange & ran
     auto last = 0;
     double sum = weights[range.first->index() + 0];
     std::vector<TreeNode::NodeRange> cuts;
-    for(int cur = 1; cur<n && cuts.size()<3; ++cur) {
+    for(auto cur = std::size_t(1); cur<n && cuts.size()<3; ++cur) {
         if(n-cur == 4-cuts.size()-1) { // just enough items to make 4 cuts
             cuts.emplace_back(range.first + last, range.first + cur); // make cut before cur
             last = cur;
