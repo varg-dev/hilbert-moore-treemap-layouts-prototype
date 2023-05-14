@@ -6,7 +6,7 @@ It contains the source code, datasets, and scripts to reproduce the results.
 When you use parts of this repository within your publications, consider referencing its accompanying publications or the latest release:
 
 * Willy Scheibel, Christopher Weyand, Joseph Bethge, and Jürgen Döllner: "Algorithmic Improvements on Hilbert and Moore Treemaps for Visualization of Large Tree-structured Datasets". In Proc. EuroVis 2021 - Short Papers. The Eurographics Association, 2021. doi: [10.2312/evs.20211065](https://doi.org/10.2312/evs.20211065)
-* Willy Scheibel and Jürgen Döllner: "". In Proc. EuroVis 2023 - Posters. The Eurographics Association, 2023.
+* Willy Scheibel and Jürgen Döllner: "Constructing Hierarchical Continuity in Hilbert & Moore Treemaps". In Proc. EuroVis 2023 - Posters. The Eurographics Association, 2023.
 * Willy Scheibel, Christopher Weyand, and Joseph Bethge: "Hilbert and Moore Treemap Layouts Prototype". Zenodo. doi: [10.5281/zenodo.7934497](https://doi.org/10.5281/zenodo.7934497)
 
 Example layout of the Firefox source code:
