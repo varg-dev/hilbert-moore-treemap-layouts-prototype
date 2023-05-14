@@ -48,27 +48,27 @@ template<> struct Dissector4<CurveType::Moore> : DissectorImpl<4,Most14,Most44,V
 
 
 template <CurveType orientation>
-LAYOUTER_INLINE std::vector<Rect> layoutItems(const std::vector<float> & weights, const Rect & rect)
+LAYOUTER_INLINE std::vector<Rect> layoutItems(const std::vector<float> & weights, const Rect & rect, float targetAR)
 {
     assert(weights.size() >= 1 && weights.size() <= 4);
 
     switch (weights.size())
     {
     case 1:
-        return Dissector1::dissectWithBestAR(weights, rect);
+        return Dissector1::dissectWithBestAR(weights, rect, targetAR);
     case 2:
-        return Dissector2<orientation>::dissectWithBestAR(weights, rect);
+        return Dissector2<orientation>::dissectWithBestAR(weights, rect, targetAR);
     case 3:
-        return Dissector3<orientation>::dissectWithBestAR(weights, rect);
+        return Dissector3<orientation>::dissectWithBestAR(weights, rect, targetAR);
     case 4:
-        return Dissector4<orientation>::dissectWithBestAR(weights, rect);
+        return Dissector4<orientation>::dissectWithBestAR(weights, rect, targetAR);
     default:
         assert(false);
         return {};
     }
 }
 
-void layoutRecursively(const Rect &rect, const Buffer<float> &weights, Buffer<Rect> &layout, const TreeNode::NodeRange range, bool useMoore, PartitionAlg alg)
+void layoutRecursively(const Rect &rect, const Buffer<float> &weights, Buffer<Rect> &layout, const TreeNode::NodeRange range, bool useMoore, PartitionAlg alg, bool useOrientation, float targetAR)
 {
     auto size = static_cast<std::size_t>(range.last - range.first);
 
@@ -91,8 +91,17 @@ void layoutRecursively(const Rect &rect, const Buffer<float> &weights, Buffer<Re
         }
 
         auto rectangles = useMoore
-            ? layoutItems<CurveType::Moore>(intermediateWeights, rect)
-            : layoutItems<CurveType::Hilbert>(intermediateWeights, rect);
+            ? layoutItems<CurveType::Moore>(intermediateWeights, rect, targetAR)
+            : layoutItems<CurveType::Hilbert>(intermediateWeights, rect, targetAR);
+        
+        // Not suggested. considered a bug but available for demonstration purposes
+        if (!useOrientation)
+        {
+            for (auto & rect : rectangles)
+            {
+                rect = Rect(rect.left(), rect.bottom(), rect.width(), rect.height());
+            }
+        }
 
         assert(size == rectangles.size());
 
@@ -129,8 +138,17 @@ void layoutRecursively(const Rect &rect, const Buffer<float> &weights, Buffer<Re
     }
 
     auto rectangles = useMoore
-        ? layoutItems<CurveType::Moore>(quadrantWeights, rect)
-        : layoutItems<CurveType::Hilbert>(quadrantWeights, rect);
+        ? layoutItems<CurveType::Moore>(quadrantWeights, rect, targetAR)
+        : layoutItems<CurveType::Hilbert>(quadrantWeights, rect, targetAR);
+        
+    // Not suggested. considered a bug but available for demonstration purposes
+    if (!useOrientation)
+    {
+        for (auto & rect : rectangles)
+        {
+            rect = Rect(rect.left(), rect.bottom(), rect.width(), rect.height());
+        }
+    }
 
     if (rect.curveDirection() == Rect::CCW)
     {
@@ -139,7 +157,7 @@ void layoutRecursively(const Rect &rect, const Buffer<float> &weights, Buffer<Re
 
     for (auto i = std::size_t(0); i < quadrants.size(); ++i)
     {
-        layoutRecursively(rectangles[i], weights, layout, quadrants[i], false, alg);
+        layoutRecursively(rectangles[i], weights, layout, quadrants[i], false, alg, useOrientation, targetAR);
     }
 }
 
@@ -147,12 +165,12 @@ void layoutRecursively(const Rect &rect, const Buffer<float> &weights, Buffer<Re
 } // namespace
 
 
-void SingleLevelHilbertMoore::layoutHilbert(const TreeNode * parent, const Rect & rect, const Tree * tree, const Buffer<float> & weights, Buffer<Rect> & layout, PartitionAlg alg)
+void SingleLevelHilbertMoore::layoutHilbert(const TreeNode * parent, const Rect & rect, const Tree * tree, const Buffer<float> & weights, Buffer<Rect> & layout, PartitionAlg alg, bool useOrientation, float targetAR)
 {
-    layoutRecursively(rect, weights, layout, tree->childrenAsRange(parent), false, alg);
+    layoutRecursively(rect, weights, layout, tree->childrenAsRange(parent), false, alg, useOrientation, targetAR);
 }
 
-void SingleLevelHilbertMoore::layoutMoore(const TreeNode *parent, const Rect &rect, const Tree * tree, const Buffer<float> &weights, Buffer<Rect> &layout, PartitionAlg alg)
+void SingleLevelHilbertMoore::layoutMoore(const TreeNode *parent, const Rect &rect, const Tree * tree, const Buffer<float> &weights, Buffer<Rect> &layout, PartitionAlg alg, bool useOrientation, float targetAR)
 {
-    layoutRecursively(rect, weights, layout, tree->childrenAsRange(parent), true, alg);
+    layoutRecursively(rect, weights, layout, tree->childrenAsRange(parent), true, alg, useOrientation, targetAR);
 }

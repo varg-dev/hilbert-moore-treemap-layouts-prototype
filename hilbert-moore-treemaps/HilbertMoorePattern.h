@@ -408,14 +408,14 @@ class DissectorImpl
 public:
     static_assert(PARTS==PATTERN::PARTS);
 
-    static std::vector<Rect> dissectWithBestAR(const std::vector<float> & weights, const Rect & rect)
+    static std::vector<Rect> dissectWithBestAR(const std::vector<float> & weights, const Rect & rect, float targetAR)
     {
         assert(weights.size()==PARTS);
 
-        const auto best = DissectorImpl<PARTS,PATTERNS...>::dissectWithBestAR(weights,rect);
+        const auto best = DissectorImpl<PARTS,PATTERNS...>::dissectWithBestAR(weights,rect, targetAR);
         const auto layout = PATTERN::dissect(weights,rect);
 
-        return avgAspectRatio(layout) < avgAspectRatio(best)
+        return std::abs(avgAspectRatio(layout) - targetAR) < std::abs(avgAspectRatio(best) - targetAR)
             ? layout
             : best;
     }
@@ -425,7 +425,7 @@ template<unsigned int PARTS, class PATTERN>
 class DissectorImpl<PARTS,PATTERN>
 {
 public:
-    static std::vector<Rect> dissectWithBestAR(const std::vector<float> & weights, const Rect & rect)
+    static std::vector<Rect> dissectWithBestAR(const std::vector<float> & weights, const Rect & rect, float /*targetAR*/)
     {
         static_assert(PARTS==PATTERN::PARTS);
         return PATTERN::dissect(weights,rect);

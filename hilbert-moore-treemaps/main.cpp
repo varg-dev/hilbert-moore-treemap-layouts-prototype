@@ -431,6 +431,44 @@ float computeLocationDrift(const std::vector<Tree *> & trees, std::uint32_t maxI
     return numberOfNodes >= 1 ? summedLocationDrift / numberOfNodes : 0.0f;
 }
 
+std::vector<std::uint32_t> occuringInBothRevisions(const Tree * currentTree, const Buffer<Rect> & currentLayout, const Buffer<std::uint32_t> & currentIDs, const Tree * prevTree, const Buffer<Rect> & prevLayout, const std::unordered_map<std::uint32_t, std::uint32_t> & prevNodeIndicesById)
+{
+    std::vector<std::uint32_t> result;
+    
+    result.reserve(currentTree->size());
+
+    for (size_t j = 0; j < currentTree->size(); j++)
+    {
+        const auto node = currentTree->at(j);
+        const auto currentId = currentIDs.at(node);
+
+#ifndef NDEBUG
+        const auto & layoutElement = currentLayout[node];
+
+        assert(layoutElement.area() >= glm::epsilon<float>());
+#endif
+
+        const auto it = prevNodeIndicesById.find(currentId);
+
+        if (it != prevNodeIndicesById.end())
+        {
+#ifndef NDEBUG
+            const auto compNode = prevTree->at(it->second);
+
+            assert(compNode != nullptr);
+
+            const auto & layoutElementComp = prevLayout[compNode];
+
+            assert(layoutElementComp.area() >= glm::epsilon<float>());
+#endif
+
+            result.push_back(currentId);
+        }
+    }
+
+    return result;
+}
+
 
 } // namespace
 
@@ -448,12 +486,16 @@ int main(int argc, char ** argv)
 
     const auto multipleDatasets = arguments.isSet("--");
 
-    auto filename = arguments.value<std::string>("--dataset", "");
-    auto filenames = arguments.value<std::string>("--datasets", "");
-    auto filenamesPrefix = arguments.value<std::string>("--datasets-prefix", "");
-    auto weightAttribute = arguments.value<std::string>("--weights", "");
-    auto partitionAlg = arguments.value<std::string>("--partition", "greedy");
-    auto layoutAlg = arguments.value<std::string>("--algorithm", "hilbert");
+    const auto filename = arguments.value<std::string>("--dataset", "");
+    const auto filenames = arguments.value<std::string>("--datasets", "");
+    const auto filenamesPrefix = arguments.value<std::string>("--datasets-prefix", "");
+    const auto weightAttribute = arguments.value<std::string>("--weights", "");
+    const auto partitionAlg = arguments.value<std::string>("--partition", "greedy");
+    const auto layoutAlg = arguments.value<std::string>("--algorithm", "hilbert");
+    const auto rootAR = arguments.value<float>("--root-ar", 1.0f);
+    const auto targetAR = arguments.value<float>("--target-ar", 1.0f);
+    const auto sortByWeight = arguments.value<bool>("--sort", false);
+    const auto orientTemplates = arguments.value<bool>("--orient", true);
 
     if (weightAttribute == "" || (!multipleDatasets && filename == "" && filenames == ""))
     {
@@ -490,6 +532,10 @@ int main(int argc, char ** argv)
     } else {
         std::cerr << "Unknown curve type or partition algorithm: " << layoutAlg << "/" << partitionAlg << std::endl;
     }
+
+    layouter.setRootAR(rootAR);
+    layouter.setTargetAR(targetAR);
+    layouter.useOrientation(orientTemplates);
 
     std::vector<Tree *> trees;
     std::vector<Buffer<std::uint32_t>> index2id; // tree index to global id
@@ -648,114 +694,143 @@ int main(int argc, char ** argv)
     // Layout Measurements
     if (measureLayoutMetrics)
     {
-        // std::cout << "Layout,AAR,AARC,ADC,RPC,RDC,LD" << std::endl;
-        std::cout << "Layout,AAR,ADC,RDC,LD,RPC,AAD" << std::endl;
-
-        auto summedAverageAspectRatio = 0.0f;
-        // auto summedAverageAspectRatioChange = 0.0f;
-        auto summedAverageDistanceChange = 0.0f;
-        // auto summedRelativeParentChange = 0.0f;
-        auto summedRelativeDirectionChange = 0.0f;
-        auto summedRelativePositionChange = 0.0f;
-        auto summedAverageAngularDisplacement = 0.0f;
-
-        for (auto i = std::uint32_t(0); i < trees.size(); ++i)
+        struct LayoutMetrics
         {
-            std::vector<std::uint32_t> occuringInBothRevisions;
+            float averageAspectRatio = 0.0f;
+            float averageAspectRatioChange = 0.0f;
+            float averageDistanceChange = 0.0f;
+            float relativeParentChange = 0.0f;
+            float relativeDirectionChange = 0.0f;
+            float relativePositionChange = 0.0f;
+            float averageAngularDisplacement = 0.0f;
+            float locationDrift = 0.0f;
+        };
+
+        std::vector<LayoutMetrics> layoutMetrics(trees.size());
+        LayoutMetrics aggregatedLayoutMetrics;
+
+        // Measure
+
+        for (size_t i = 0; i < trees.size(); ++i) {
+            std::clog << "Measure tree " << (i+1) << " of " << trees.size() << std::endl;
 
             const auto currentTree = trees[i];
+            auto & metrics = layoutMetrics[i];
             // const auto & currentNodeIndicesById = id2index[i];
             const auto & currentIDs = index2id[i];
+            const auto & currentLayout = layouts[i];
+            
+            metrics.averageAspectRatio = computeAverageAspectRatio(trees[i], layouts[i]);
+            // metrics.averageAspectRatioChange = -1.0f;
+            metrics.averageDistanceChange = -1.0f;
+            // metrics.relativeParentChange = -1.0f;
+            metrics.relativeDirectionChange = -1.0f;
+            metrics.averageAngularDisplacement = -1.0f;
+            metrics.relativePositionChange = -1.0f;
+            metrics.locationDrift = -1.0f;
 
             if (i > 0)
             {
                 const auto prevTree = trees[i-1];
                 const auto & prevNodeIndicesById = id2index[i-1];
                 // const auto & prevIDs = index2id[i-1];
+                const auto & prevLayout = layouts[i-1];
+                
+                // std::clog << "    - occuringInBothRevisions" << std::endl;
+                std::vector<std::uint32_t> occuringInBothRevisions = ::occuringInBothRevisions(currentTree, currentLayout, currentIDs, prevTree, prevLayout, prevNodeIndicesById);
 
-                for (size_t j = 0; j < currentTree->size(); j++)
-                {
-                    const auto node = currentTree->at(j);
-
-                    const auto currentId = currentIDs.at(node);
-
-                    const auto & layoutElement = layouts[i][node];
-
-                    if (layoutElement.area() >= glm::epsilon<float>())
-                    {
-                        const auto it = prevNodeIndicesById.find(currentId);
-
-                        if (it != prevNodeIndicesById.end())
-                        {
-                            const auto compNode = prevTree->at(it->second);
-
-                            if (compNode != nullptr)
-                            {
-                                const auto & layoutElementComp = layouts[i-1][compNode];
-
-                                if (layoutElementComp.area() >= glm::epsilon<float>())
-                                {
-                                    occuringInBothRevisions.push_back(currentId);
-                                }
-                            }
-                        }
-                    }
-                }
+                // metrics.averageAspectRatioChange = computeAverageAspectRatioChange(trees[i-1], id2index[i-1], layouts[i-1], trees[i], id2index[i], layouts[i], occuringInBothRevisions);
+                // metrics.relativeParentChange = computeRelativeParentChange(trees[i-1], id2index[i-1], layouts[i-1], trees[i], id2index[i], layouts[i], occuringInBothRevisions);
+                // std::clog << "    - computeAverageDistanceChange" << std::endl;
+                metrics.averageDistanceChange = computeAverageDistanceChange(trees[i-1], id2index[i-1], layouts[i-1], trees[i], id2index[i], layouts[i], occuringInBothRevisions);
+                // std::clog << "    - computeAngularMetrics" << std::endl;
+                std::tie(metrics.relativeDirectionChange, metrics.averageAngularDisplacement)
+                    = computeAngularMetrics(trees[i-1], id2index[i-1], layouts[i-1], trees[i], id2index[i], layouts[i], occuringInBothRevisions);
+                // std::clog << "    - computeRelativePositionChange" << std::endl;
+                metrics.relativePositionChange = computeRelativePositionChange(trees[i-1], id2index[i-1], index2id[i-1], layouts[i-1], trees[i], id2index[i], index2id[i], layouts[i], occuringInBothRevisions);
             }
 
-            const auto averageAspectRatio = computeAverageAspectRatio(trees[i], layouts[i]);
-            //const auto averageAspectRatioChange = i > 0 ? computeAverageAspectRatioChange(trees[i-1], id2index[i-1], layouts[i-1], trees[i], id2index[i], layouts[i], occuringInBothRevisions) : -1.0f;
-            const auto averageDistanceChange = i > 0 ? computeAverageDistanceChange(trees[i-1], id2index[i-1], layouts[i-1], trees[i], id2index[i], layouts[i], occuringInBothRevisions) : -1.0f;
-            // const auto relativeParentChange = -1.0f; // i > 0 ? computeRelativeParentChange(trees[i-1], id2index[i-1], layouts[i-1], trees[i], id2index[i], layouts[i], occuringInBothRevisions) : -1.0f;
-            float relativeDirectionChange = -1.0f;
-            float averageAngularDisplacement = -1.0f;
-            if (i > 0)
-            {
-                std::tie(relativeDirectionChange, averageAngularDisplacement) = computeAngularMetrics(trees[i-1], id2index[i-1], layouts[i-1], trees[i], id2index[i], layouts[i], occuringInBothRevisions);
-            }
-            const auto locationDrift = -1.0f;
-            const auto relativePositionChange = i > 0 ? computeRelativePositionChange(trees[i-1], id2index[i-1], index2id[i-1], layouts[i-1], trees[i], id2index[i], index2id[i], layouts[i], occuringInBothRevisions) : -1.0f;
-
-            std::cout << i
-                << "," << averageAspectRatio
-                // << "," << averageAspectRatioChange
-                << "," << averageDistanceChange
-                // << "," << relativeParentChange
-                << "," << relativeDirectionChange
-                << "," << locationDrift
-                << "," << relativePositionChange
-                << "," << averageAngularDisplacement
-                << std::endl;
-
-            summedAverageAspectRatio += averageAspectRatio;
-            // summedAverageAspectRatioChange += averageAspectRatioChange;
-            summedAverageDistanceChange += averageDistanceChange;
-            // summedRelativeParentChange += relativeParentChange;
-            summedRelativeDirectionChange += relativeDirectionChange;
-            summedRelativePositionChange += relativePositionChange;
-            summedAverageAngularDisplacement += averageAngularDisplacement;
+            /*std::clog << i
+                << "," << metrics.averageAspectRatio
+                // << "," << metrics.averageAspectRatioChange
+                << "," << metrics.averageDistanceChange
+                // << "," << metrics.relativeParentChange
+                << "," << metrics.relativeDirectionChange
+                << "," << metrics.locationDrift
+                << "," << metrics.relativePositionChange
+                << "," << metrics.averageAngularDisplacement
+                << std::endl;*/
         }
 
-        const auto maxId = path2id.size();
-        const auto locationDrift = computeLocationDrift(trees, maxId, index2id, id2index, layouts);
+        aggregatedLayoutMetrics.averageAspectRatio += layoutMetrics[0].averageAspectRatio;
 
-        const auto averageAspectRatio = summedAverageAspectRatio / trees.size();
-        // const auto averageAspectRatioChange = trees.size() <= 1 ? 0.0f : summedAverageAspectRatioChange / (trees.size()-1);
-        const auto averageDistanceChange = trees.size() <= 1 ? 0.0f : summedAverageDistanceChange / (trees.size()-1);
-        // const auto relativeParentChange = trees.size() <= 1 ? 0.0f : summedRelativeParentChange / (trees.size()-1);
-        const auto relativeDirectionChange = trees.size() <= 1 ? 0.0f : summedRelativeDirectionChange / (trees.size()-1);
-        const auto relativePositionChange = trees.size() <= 1 ? 0.0f : summedRelativePositionChange / (trees.size()-1);
-        const auto averageAngularDisplacement = trees.size() <= 1 ? 0.0f : summedAverageAngularDisplacement / (trees.size()-1);
+        if (trees.size() > 1)
+        {
+            for (auto i = std::uint32_t(1); i < trees.size(); ++i)
+            {
+                const auto & metrics = layoutMetrics[i];
 
-        std::cout << "Sum"
-            << "," << averageAspectRatio
-            // << "," << averageAspectRatioChange
-            << "," << averageDistanceChange
-            // << "," << relativeParentChange
-            << "," << relativeDirectionChange
-            << "," << locationDrift
-            << "," << relativePositionChange
-            << "," << averageAngularDisplacement
+                aggregatedLayoutMetrics.averageAspectRatio += metrics.averageAspectRatio;
+                // aggregatedLayoutMetrics.averageAspectRatioChange += metrics.averageAspectRatioChange;
+                aggregatedLayoutMetrics.averageDistanceChange += metrics.averageDistanceChange;
+                // aggregatedLayoutMetrics.relativeParentChange += metrics.relativeParentChange;
+                aggregatedLayoutMetrics.relativeDirectionChange += metrics.relativeDirectionChange;
+                aggregatedLayoutMetrics.relativePositionChange += metrics.relativePositionChange;
+                aggregatedLayoutMetrics.averageAngularDisplacement += metrics.averageAngularDisplacement;
+            }
+
+            const auto maxId = path2id.size();
+            aggregatedLayoutMetrics.locationDrift = computeLocationDrift(trees, maxId, index2id, id2index, layouts);
+
+            aggregatedLayoutMetrics.averageAspectRatio /= trees.size();
+            aggregatedLayoutMetrics.averageAspectRatioChange /= float(trees.size()-1);
+            aggregatedLayoutMetrics.averageDistanceChange /= float(trees.size()-1);
+            aggregatedLayoutMetrics.relativeParentChange /= float(trees.size()-1);
+            aggregatedLayoutMetrics.relativeDirectionChange /= float(trees.size()-1);
+            aggregatedLayoutMetrics.relativePositionChange /= float(trees.size()-1);
+            aggregatedLayoutMetrics.averageAngularDisplacement /= float(trees.size()-1);
+        }
+        else
+        {
+            aggregatedLayoutMetrics.averageAspectRatioChange = -1.0;
+            aggregatedLayoutMetrics.averageDistanceChange = -1.0;
+            aggregatedLayoutMetrics.relativeParentChange = -1.0;
+            aggregatedLayoutMetrics.relativeDirectionChange = -1.0;
+            aggregatedLayoutMetrics.relativePositionChange = -1.0;
+            aggregatedLayoutMetrics.averageAngularDisplacement = -1.0;
+            aggregatedLayoutMetrics.locationDrift = -1.0;
+        }
+
+        // Output
+
+        // std::cout << "Layout,AAR,AARC,ADC,RPC,RDC,LD" << std::endl;
+        std::cout << "Layout,AAR,ADC,RDC,LD,RPC,AAD" << std::endl;
+
+        for (auto i = std::size_t(0); i < layoutMetrics.size(); ++i)
+        {
+            const auto metrics = layoutMetrics[i];
+
+            std::cout << i
+                << "," << metrics.averageAspectRatio
+                // << "," << metrics.averageAspectRatioChange
+                << "," << metrics.averageDistanceChange
+                // << "," << metrics.relativeParentChange
+                << "," << metrics.relativeDirectionChange
+                << "," << metrics.locationDrift
+                << "," << metrics.relativePositionChange
+                << "," << metrics.averageAngularDisplacement
+                << std::endl;
+        }
+
+        std::cout << "Aggregate"
+            << "," << aggregatedLayoutMetrics.averageAspectRatio
+            // << "," << aggregatedLayoutMetrics.averageAspectRatioChange
+            << "," << aggregatedLayoutMetrics.averageDistanceChange
+            // << "," << aggregatedLayoutMetrics.relativeParentChange
+            << "," << aggregatedLayoutMetrics.relativeDirectionChange
+            << "," << aggregatedLayoutMetrics.locationDrift
+            << "," << aggregatedLayoutMetrics.relativePositionChange
+            << "," << aggregatedLayoutMetrics.averageAngularDisplacement
             << std::endl;
     }
 
@@ -770,7 +845,7 @@ int main(int argc, char ** argv)
     }
     if (exportLayout)
     {
-        writeToFile(layout, std::cout);
+        writeToFile(layout, tree, std::cout);
     }
 
     for (const auto & tree : trees)
